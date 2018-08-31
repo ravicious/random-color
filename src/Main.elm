@@ -5,7 +5,6 @@ import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Color exposing (Color)
-import Debug
 
 
 main =
