@@ -176,7 +176,7 @@ fmod f n =
         integer =
             floor f
     in
-        toFloat (remainderBy integer n) + f - toFloat integer
+        toFloat (modBy n integer) + f - toFloat integer
 
 
 rgbToHsl : Int -> Int -> Int -> ( Float, Float, Float )
