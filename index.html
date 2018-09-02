@@ -5061,10 +5061,11 @@ var author$project$Color$hsla = F4(
 			lightness,
 			alpha);
 	});
+var elm$core$Basics$modBy = _Basics_modBy;
 var author$project$Color$fmod = F2(
 	function (f, n) {
 		var integer = elm$core$Basics$floor(f);
-		return ((n % integer) + f) - integer;
+		return (A2(elm$core$Basics$modBy, n, integer) + f) - integer;
 	});
 var elm$core$Basics$abs = function (n) {
 	return (n < 0) ? (-n) : n;
@@ -5166,7 +5167,6 @@ var elm$core$String$concat = function (strings) {
 	return A2(elm$core$String$join, '', strings);
 };
 var elm$core$String$fromList = _String_fromList;
-var elm$core$Basics$modBy = _Basics_modBy;
 var rtfeldman$elm_hex$Hex$unsafeToDigit = function (num) {
 	unsafeToDigit:
 	while (true) {
