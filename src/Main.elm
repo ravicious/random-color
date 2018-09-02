@@ -2,6 +2,7 @@ module Main exposing (main)
 
 import Browser
 import Color exposing (Color)
+import ColorParser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Random
@@ -45,9 +46,22 @@ colorGenerator =
     Random.map3 Color.rgb byteGenerator byteGenerator byteGenerator
 
 
-init : () -> ( Model, Cmd Msg )
+type alias Flags =
+    { color : String }
+
+
+init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Nothing, Random.generate RandomColor colorGenerator )
+    if String.isEmpty flags.color then
+        ( Nothing, Random.generate RandomColor colorGenerator )
+
+    else
+        case ColorParser.parse flags.color of
+            Ok color ->
+                ( Just color, Cmd.none )
+
+            Err _ ->
+                ( Nothing, Cmd.none )
 
 
 type Msg
