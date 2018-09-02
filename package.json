@@ -1,9 +1,8 @@
 {
-  "dependencies": {
-    "elm-format": "^0.8.0"
-  },
+  "dependencies": {},
   "private": true,
   "devDependencies": {
+    "elm-format": "^0.8.0",
     "elm-live": "^3.0.1",
     "uglify-js": "^3.4.9"
   },

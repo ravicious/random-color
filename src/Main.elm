@@ -1,10 +1,11 @@
-module Main exposing (..)
+module Main exposing (main)
 
-import Random
 import Browser
+import Color exposing (Color)
+import ColorParser
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Color exposing (Color)
+import Random
 
 
 main =
@@ -12,7 +13,7 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = (\_ -> Sub.none)
+        , subscriptions = \_ -> Sub.none
         }
 
 
@@ -22,14 +23,13 @@ colorToCssRgb color =
         { red, green, blue } =
             Color.toRgb color
     in
-        ("rgb("
-            ++ (String.fromInt red)
-            ++ ", "
-            ++ (String.fromInt green)
-            ++ ", "
-            ++ (String.fromInt blue)
-            ++ ")"
-        )
+    "rgb("
+        ++ String.fromInt red
+        ++ ", "
+        ++ String.fromInt green
+        ++ ", "
+        ++ String.fromInt blue
+        ++ ")"
 
 
 type alias Model =
@@ -46,9 +46,22 @@ colorGenerator =
     Random.map3 Color.rgb byteGenerator byteGenerator byteGenerator
 
 
-init : () -> ( Model, Cmd Msg )
+type alias Flags =
+    { color : String }
+
+
+init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( Nothing, Random.generate RandomColor colorGenerator )
+    if String.isEmpty flags.color then
+        ( Nothing, Random.generate RandomColor colorGenerator )
+
+    else
+        case ColorParser.parse flags.color of
+            Ok color ->
+                ( Just color, Cmd.none )
+
+            Err _ ->
+                ( Nothing, Cmd.none )
 
 
 type Msg
@@ -82,5 +95,5 @@ view model =
                 ]
                 [ text (colorToCssRgb color)
                 , br [] []
-                , text ("#" ++ (Color.toHex color))
+                , text ("#" ++ Color.toHex color)
                 ]
