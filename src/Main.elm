@@ -33,9 +33,15 @@ colorToCssRgb color =
 
 
 type Model
-    = SpecificColor Color
-    | IncorrectColor
-    | RandomColor Color
+    = IncorrectColor
+    | SpecificColor PageColors
+    | RandomColor PageColors
+
+
+type alias PageColors =
+    { backgroundColor : Color
+    , textColor : Color
+    }
 
 
 byteGenerator : Random.Generator Int
@@ -54,22 +60,65 @@ type alias Flags =
     }
 
 
+generateContrastingColor : Float -> Int -> Random.Seed -> Color -> ( Maybe Color, Random.Seed )
+generateContrastingColor minimumContrast maxTries seed color =
+    if maxTries == 0 then
+        ( Nothing, seed )
+
+    else
+        let
+            ( nextColor, nextSeed ) =
+                Random.step colorGenerator seed
+        in
+        if Color.contrast color nextColor >= minimumContrast then
+            ( Just nextColor, nextSeed )
+
+        else
+            generateContrastingColor minimumContrast (maxTries - 1) nextSeed color
+
+
+findContrastingOrComplementaryColor : Color -> Color
+findContrastingOrComplementaryColor color =
+    let
+        complementaryColor =
+            Color.complement color
+
+        -- Create the seed based on the given color, so that for any given color we're always
+        -- going to find the same contrasting color.
+        seed =
+            Random.initialSeed (Color.toRgbInt color)
+    in
+    generateContrastingColor 3.0 50 seed color
+        |> Tuple.first
+        |> Maybe.withDefault complementaryColor
+
+
 init : Flags -> ( Model, Cmd msg )
 init flags =
     if String.isEmpty flags.color then
         let
-            seed =
-                Random.initialSeed flags.randomNumber
+            ( backgroundColor, _ ) =
+                Random.step colorGenerator (Random.initialSeed flags.randomNumber)
 
-            ( color, _ ) =
-                Random.step colorGenerator seed
+            textColor =
+                findContrastingOrComplementaryColor backgroundColor
         in
-        ( RandomColor color, Cmd.none )
+        ( RandomColor
+            { backgroundColor = backgroundColor
+            , textColor = textColor
+            }
+        , Cmd.none
+        )
 
     else
         case ColorParser.parse flags.color of
             Ok color ->
-                ( SpecificColor color, Cmd.none )
+                ( SpecificColor
+                    { backgroundColor = color
+                    , textColor = findContrastingOrComplementaryColor color
+                    }
+                , Cmd.none
+                )
 
             Err _ ->
                 ( IncorrectColor, Cmd.none )
@@ -87,47 +136,47 @@ update _ model =
 view : Model -> Html msg
 view model =
     case model of
-        RandomColor color ->
+        RandomColor { backgroundColor, textColor } ->
             let
-                backgroundColor =
-                    colorToCssRgb color
+                cssBackgroundColor =
+                    colorToCssRgb backgroundColor
 
-                textColor =
-                    color |> Color.complement |> colorToCssRgb
+                cssTextColor =
+                    colorToCssRgb textColor
             in
             layout
-                [ style "background-color" backgroundColor
-                , style "color" textColor
+                [ style "background-color" cssBackgroundColor
+                , style "color" cssTextColor
                 ]
-                [ text (colorToCssRgb color)
+                [ text (colorToCssRgb backgroundColor)
                 , br [] []
-                , text ("#" ++ Color.toHex color)
+                , text ("#" ++ Color.toHex backgroundColor)
                 , a
                     [ style "font-size" "calc(.55rem + 1.0vw)"
-                    , style "color" textColor
-                    , href ("?color=" ++ Color.toHex color)
+                    , style "color" cssTextColor
+                    , href ("?color=" ++ Color.toHex backgroundColor)
                     ]
                     [ text "link to this color" ]
                 ]
 
-        SpecificColor color ->
+        SpecificColor { backgroundColor, textColor } ->
             let
-                backgroundColor =
-                    colorToCssRgb color
+                cssBackgroundColor =
+                    colorToCssRgb backgroundColor
 
-                textColor =
-                    color |> Color.complement |> colorToCssRgb
+                cssTextColor =
+                    colorToCssRgb textColor
             in
             layout
-                [ style "background-color" backgroundColor
-                , style "color" textColor
+                [ style "background-color" cssBackgroundColor
+                , style "color" cssTextColor
                 ]
-                [ text (colorToCssRgb color)
+                [ text (colorToCssRgb backgroundColor)
                 , br [] []
-                , text ("#" ++ Color.toHex color)
+                , text ("#" ++ Color.toHex backgroundColor)
                 , a
                     [ style "font-size" "calc(.55rem + 1.0vw)"
-                    , style "color" textColor
+                    , style "color" cssTextColor
                     , href "?"
                     ]
                     [ text "generate random color" ]

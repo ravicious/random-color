@@ -3,7 +3,7 @@ module Color exposing
     , rgb, rgba, hsl, hsla, greyscale, grayscale, complement
     , Gradient, linear, radial
     , toRgb, toHsl
-    , toHex
+    , contrast, luminance, toHex, toRgbInt
     )
 
 {-| Library for working with colors. Includes
@@ -302,3 +302,48 @@ toHex color =
             toRgb color
     in
     String.concat [ intToHex red, intToHex green, intToHex blue ]
+
+
+{-| Based on <https://stackoverflow.com/a/9733420/742872>
+-}
+luminance : Color -> Float
+luminance color =
+    let
+        { red, green, blue } =
+            toRgb color
+
+        calculateV =
+            \x ->
+                let
+                    v =
+                        toFloat x / 255
+                in
+                if v <= 0.03928 then
+                    v / 12.92
+
+                else
+                    ((v + 0.055) / 1.055) ^ 2.4
+    in
+    calculateV red * 0.2126 + calculateV green * 0.7152 + calculateV blue * 0.0722
+
+
+contrast : Color -> Color -> Float
+contrast color1 color2 =
+    let
+        result =
+            (luminance color1 + 0.05) / (luminance color2 + 0.05)
+    in
+    if result < 1 then
+        1 / result
+
+    else
+        result
+
+
+toRgbInt : Color -> Int
+toRgbInt color =
+    let
+        { red, green, blue } =
+            toRgb color
+    in
+    red * 1000000 + green * 1000 + blue
