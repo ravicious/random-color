@@ -295,7 +295,10 @@ radial =
 toHex : Color -> String
 toHex color =
     let
+        intToHex =
+            Hex.toString >> String.padLeft 2 '0'
+
         { red, green, blue } =
             toRgb color
     in
-    String.concat [ Hex.toString red, Hex.toString green, Hex.toString blue ]
+    String.concat [ intToHex red, intToHex green, intToHex blue ]

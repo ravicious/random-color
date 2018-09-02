@@ -32,8 +32,10 @@ colorToCssRgb color =
         ++ ")"
 
 
-type alias Model =
-    Maybe Color
+type Model
+    = SpecificColor Color
+    | IncorrectColor
+    | RandomColor Color
 
 
 byteGenerator : Random.Generator Int
@@ -62,15 +64,15 @@ init flags =
             ( color, _ ) =
                 Random.step colorGenerator seed
         in
-        ( Just color, Cmd.none )
+        ( RandomColor color, Cmd.none )
 
     else
         case ColorParser.parse flags.color of
             Ok color ->
-                ( Just color, Cmd.none )
+                ( SpecificColor color, Cmd.none )
 
             Err _ ->
-                ( Nothing, Cmd.none )
+                ( IncorrectColor, Cmd.none )
 
 
 update : msg -> Model -> ( Model, Cmd msg )
@@ -85,22 +87,63 @@ update _ model =
 view : Model -> Html msg
 view model =
     case model of
-        Nothing ->
+        RandomColor color ->
+            let
+                backgroundColor =
+                    colorToCssRgb color
+
+                textColor =
+                    color |> Color.complement |> colorToCssRgb
+            in
+            layout
+                [ style "background-color" backgroundColor
+                , style "color" textColor
+                ]
+                [ text (colorToCssRgb color)
+                , br [] []
+                , text ("#" ++ Color.toHex color)
+                , a
+                    [ style "font-size" "calc(.55rem + 1.0vw)"
+                    , style "color" textColor
+                    , href ("/?color=" ++ Color.toHex color)
+                    ]
+                    [ text "link to this color" ]
+                ]
+
+        SpecificColor color ->
+            let
+                backgroundColor =
+                    colorToCssRgb color
+
+                textColor =
+                    color |> Color.complement |> colorToCssRgb
+            in
+            layout
+                [ style "background-color" backgroundColor
+                , style "color" textColor
+                ]
+                [ text (colorToCssRgb color)
+                , br [] []
+                , text ("#" ++ Color.toHex color)
+                , a
+                    [ style "font-size" "calc(.55rem + 1.0vw)"
+                    , style "color" textColor
+                    , href "/"
+                    ]
+                    [ text "generate random color" ]
+                ]
+
+        IncorrectColor ->
             layout
                 [ style "background-color" "white"
                 , style "color" "black"
                 ]
                 [ text "Incorrect color"
-                ]
-
-        Just color ->
-            layout
-                [ style "background-color" (colorToCssRgb color)
-                , style "color" (color |> Color.complement |> colorToCssRgb)
-                ]
-                [ text (colorToCssRgb color)
-                , br [] []
-                , text ("#" ++ Color.toHex color)
+                , a
+                    [ style "font-size" "calc(.55rem + 1.0vw)"
+                    , href "/"
+                    ]
+                    [ text "generate random color" ]
                 ]
 
 
@@ -111,6 +154,7 @@ layout additionalStyles children =
             [ style "height" "100vh"
             , style "width" "100vw"
             , style "display" "flex"
+            , style "flex-direction" "column"
             , style "justify-content" "center"
             , style "align-items" "center"
             , style "font-family" "monospace"
