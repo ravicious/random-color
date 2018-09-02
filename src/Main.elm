@@ -1,10 +1,10 @@
-module Main exposing (..)
+module Main exposing (main)
 
-import Random
 import Browser
+import Color exposing (Color)
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Color exposing (Color)
+import Random
 
 
 main =
@@ -12,7 +12,7 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = (\_ -> Sub.none)
+        , subscriptions = \_ -> Sub.none
         }
 
 
@@ -22,14 +22,13 @@ colorToCssRgb color =
         { red, green, blue } =
             Color.toRgb color
     in
-        ("rgb("
-            ++ (String.fromInt red)
-            ++ ", "
-            ++ (String.fromInt green)
-            ++ ", "
-            ++ (String.fromInt blue)
-            ++ ")"
-        )
+    "rgb("
+        ++ String.fromInt red
+        ++ ", "
+        ++ String.fromInt green
+        ++ ", "
+        ++ String.fromInt blue
+        ++ ")"
 
 
 type alias Model =
@@ -82,5 +81,5 @@ view model =
                 ]
                 [ text (colorToCssRgb color)
                 , br [] []
-                , text ("#" ++ (Color.toHex color))
+                , text ("#" ++ Color.toHex color)
                 ]

@@ -1,20 +1,10 @@
-module Color
-    exposing
-        ( Color
-        , rgb
-        , rgba
-        , hsl
-        , hsla
-        , greyscale
-        , grayscale
-        , complement
-        , Gradient
-        , linear
-        , radial
-        , toRgb
-        , toHsl
-        , toHex
-        )
+module Color exposing
+    ( Color
+    , rgb, rgba, hsl, hsla, greyscale, grayscale, complement
+    , Gradient, linear, radial
+    , toRgb, toHsl
+    , toHex
+    )
 
 {-| Library for working with colors. Includes
 [RGB](https://en.wikipedia.org/wiki/RGB_color_model) and
@@ -131,7 +121,7 @@ complement color =
                 ( h, s, l ) =
                     rgbToHsl r g b
             in
-                hsla (h + degrees 180) s l a
+            hsla (h + degrees 180) s l a
 
 
 {-| Extract the components of a color in the HSL format.
@@ -147,7 +137,7 @@ toHsl color =
                 ( h, s, l ) =
                     rgbToHsl r g b
             in
-                { hue = h, saturation = s, lightness = l, alpha = a }
+            { hue = h, saturation = s, lightness = l, alpha = a }
 
 
 {-| Extract the components of a color in the RGB format.
@@ -163,11 +153,11 @@ toRgb color =
                 ( r, g, b ) =
                     hslToRgb h s l
             in
-                { red = round (255 * r)
-                , green = round (255 * g)
-                , blue = round (255 * b)
-                , alpha = a
-                }
+            { red = round (255 * r)
+            , green = round (255 * g)
+            , blue = round (255 * b)
+            , alpha = a
+            }
 
 
 fmod : Float -> Int -> Float
@@ -176,7 +166,7 @@ fmod f n =
         integer =
             floor f
     in
-        toFloat (modBy n integer) + f - toFloat integer
+    toFloat (modBy n integer) + f - toFloat integer
 
 
 rgbToHsl : Int -> Int -> Int -> ( Float, Float, Float )
@@ -202,13 +192,16 @@ rgbToHsl red green blue =
 
         hue =
             degrees 60
-                * if cMax == r then
+                * (if cMax == r then
                     fmod ((g - b) / c) 6
-                  else if cMax == g then
+
+                   else if cMax == g then
                     ((b - r) / c) + 2
-                  else
+
+                   else
                     {- cMax == b -}
                     ((r - g) / c) + 4
+                  )
 
         lightness =
             (cMax + cMin) / 2
@@ -216,10 +209,11 @@ rgbToHsl red green blue =
         saturation =
             if lightness == 0 then
                 0
+
             else
                 c / (1 - abs (2 * lightness - 1))
     in
-        ( hue, saturation, lightness )
+    ( hue, saturation, lightness )
 
 
 hslToRgb : Float -> Float -> Float -> ( Float, Float, Float )
@@ -237,25 +231,32 @@ hslToRgb hue saturation lightness =
         ( r, g, b ) =
             if normHue < 0 then
                 ( 0, 0, 0 )
+
             else if normHue < 1 then
                 ( chroma, x, 0 )
+
             else if normHue < 2 then
                 ( x, chroma, 0 )
+
             else if normHue < 3 then
                 ( 0, chroma, x )
+
             else if normHue < 4 then
                 ( 0, x, chroma )
+
             else if normHue < 5 then
                 ( x, 0, chroma )
+
             else if normHue < 6 then
                 ( chroma, 0, x )
+
             else
                 ( 0, 0, 0 )
 
         m =
             lightness - chroma / 2
     in
-        ( r + m, g + m, b + m )
+    ( r + m, g + m, b + m )
 
 
 
@@ -297,4 +298,4 @@ toHex color =
         { red, green, blue } =
             toRgb color
     in
-        String.concat [ Hex.toString red, Hex.toString green, Hex.toString blue ]
+    String.concat [ Hex.toString red, Hex.toString green, Hex.toString blue ]
