@@ -47,13 +47,22 @@ colorGenerator =
 
 
 type alias Flags =
-    { color : String }
+    { color : String
+    , randomNumber : Int
+    }
 
 
-init : Flags -> ( Model, Cmd Msg )
+init : Flags -> ( Model, Cmd msg )
 init flags =
     if String.isEmpty flags.color then
-        ( Nothing, Random.generate RandomColor colorGenerator )
+        let
+            seed =
+                Random.initialSeed flags.randomNumber
+
+            ( color, _ ) =
+                Random.step colorGenerator seed
+        in
+        ( Just color, Cmd.none )
 
     else
         case ColorParser.parse flags.color of
@@ -64,36 +73,50 @@ init flags =
                 ( Nothing, Cmd.none )
 
 
-type Msg
-    = RandomColor Color
+update : msg -> Model -> ( Model, Cmd msg )
+update _ model =
+    ( model, Cmd.none )
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        RandomColor color ->
-            ( Just color, Cmd.none )
+
+-- View
 
 
+view : Model -> Html msg
 view model =
     case model of
         Nothing ->
-            text ""
+            layout
+                [ style "background-color" "white"
+                , style "color" "black"
+                ]
+                [ text "Incorrect color"
+                ]
 
         Just color ->
-            div
-                [ style "height" "100vh"
-                , style "width" "100vw"
-                , style "background-color" (colorToCssRgb color)
+            layout
+                [ style "background-color" (colorToCssRgb color)
                 , style "color" (color |> Color.complement |> colorToCssRgb)
-                , style "display" "flex"
-                , style "justify-content" "center"
-                , style "align-items" "center"
-                , style "font-family" "monospace"
-                , style "font-size" "calc(.75rem + 5.5vw)"
-                , style "text-align" "center"
                 ]
                 [ text (colorToCssRgb color)
                 , br [] []
                 , text ("#" ++ Color.toHex color)
                 ]
+
+
+layout : List (Attribute msg) -> List (Html msg) -> Html msg
+layout additionalStyles children =
+    div
+        (List.append
+            [ style "height" "100vh"
+            , style "width" "100vw"
+            , style "display" "flex"
+            , style "justify-content" "center"
+            , style "align-items" "center"
+            , style "font-family" "monospace"
+            , style "font-size" "calc(.75rem + 5.5vw)"
+            , style "text-align" "center"
+            ]
+            additionalStyles
+        )
+        children
