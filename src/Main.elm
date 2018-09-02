@@ -105,7 +105,7 @@ view model =
                 , a
                     [ style "font-size" "calc(.55rem + 1.0vw)"
                     , style "color" textColor
-                    , href ("/?color=" ++ Color.toHex color)
+                    , href ("?color=" ++ Color.toHex color)
                     ]
                     [ text "link to this color" ]
                 ]
@@ -128,7 +128,7 @@ view model =
                 , a
                     [ style "font-size" "calc(.55rem + 1.0vw)"
                     , style "color" textColor
-                    , href "/"
+                    , href "?"
                     ]
                     [ text "generate random color" ]
                 ]
@@ -141,7 +141,7 @@ view model =
                 [ text "Incorrect color"
                 , a
                     [ style "font-size" "calc(.55rem + 1.0vw)"
-                    , href "/"
+                    , href "?"
                     ]
                     [ text "generate random color" ]
                 ]
