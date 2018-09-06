@@ -13,23 +13,8 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = always Sub.none
         }
-
-
-colorToCssRgb : Color -> String
-colorToCssRgb color =
-    let
-        { red, green, blue } =
-            Color.toRgb color
-    in
-    "rgb("
-        ++ String.fromInt red
-        ++ ", "
-        ++ String.fromInt green
-        ++ ", "
-        ++ String.fromInt blue
-        ++ ")"
 
 
 type Model
@@ -44,6 +29,12 @@ type alias PageColors =
     }
 
 
+type alias Flags =
+    { color : String
+    , randomNumber : Int
+    }
+
+
 byteGenerator : Random.Generator Int
 byteGenerator =
     Random.int 0 255
@@ -52,12 +43,6 @@ byteGenerator =
 colorGenerator : Random.Generator Color
 colorGenerator =
     Random.map3 Color.rgb byteGenerator byteGenerator byteGenerator
-
-
-type alias Flags =
-    { color : String
-    , randomNumber : Int
-    }
 
 
 generateContrastingColor : Float -> Int -> Random.Seed -> Color -> ( Maybe Color, Random.Seed )
@@ -213,3 +198,18 @@ layout additionalStyles children =
             additionalStyles
         )
         children
+
+
+colorToCssRgb : Color -> String
+colorToCssRgb color =
+    let
+        { red, green, blue } =
+            Color.toRgb color
+    in
+    "rgb("
+        ++ String.fromInt red
+        ++ ", "
+        ++ String.fromInt green
+        ++ ", "
+        ++ String.fromInt blue
+        ++ ")"
