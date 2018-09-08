@@ -5,6 +5,7 @@ import Color exposing (Color)
 import ColorParser
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Events exposing (..)
 import Random
 
 
@@ -20,12 +21,18 @@ main =
 type Model
     = IncorrectColor
     | SpecificColor PageColors
-    | RandomColor PageColors
+    | RandomColor RandomColorModel
 
 
 type alias PageColors =
     { backgroundColor : Color
     , textColor : Color
+    }
+
+
+type alias RandomColorModel =
+    { colors : PageColors
+    , seed : Random.Seed
     }
 
 
@@ -78,19 +85,32 @@ findContrastingOrComplementaryColor color =
         |> Maybe.withDefault complementaryColor
 
 
-init : Flags -> ( Model, Cmd msg )
+generateRandomPageColors : Random.Seed -> ( PageColors, Random.Seed )
+generateRandomPageColors seed =
+    let
+        ( backgroundColor, nextSeed ) =
+            Random.step colorGenerator seed
+
+        textColor =
+            findContrastingOrComplementaryColor backgroundColor
+    in
+    ( { backgroundColor = backgroundColor
+      , textColor = textColor
+      }
+    , nextSeed
+    )
+
+
+init : Flags -> ( Model, Cmd Msg )
 init flags =
     if String.isEmpty flags.color then
         let
-            ( backgroundColor, _ ) =
-                Random.step colorGenerator (Random.initialSeed flags.randomNumber)
-
-            textColor =
-                findContrastingOrComplementaryColor backgroundColor
+            ( pageColors, nextSeed ) =
+                generateRandomPageColors (Random.initialSeed flags.randomNumber)
         in
         ( RandomColor
-            { backgroundColor = backgroundColor
-            , textColor = textColor
+            { colors = pageColors
+            , seed = nextSeed
             }
         , Cmd.none
         )
@@ -109,20 +129,43 @@ init flags =
                 ( IncorrectColor, Cmd.none )
 
 
-update : msg -> Model -> ( Model, Cmd msg )
-update _ model =
-    ( model, Cmd.none )
+type Msg
+    = GenerateRandomColor
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg pageModel =
+    case pageModel of
+        RandomColor model ->
+            case msg of
+                GenerateRandomColor ->
+                    let
+                        ( pageColors, nextSeed ) =
+                            generateRandomPageColors model.seed
+                    in
+                    ( RandomColor
+                        { colors = pageColors
+                        , seed = nextSeed
+                        }
+                    , Cmd.none
+                    )
+
+        _ ->
+            ( pageModel, Cmd.none )
 
 
 
 -- View
 
 
-view : Model -> Html msg
-view model =
-    case model of
-        RandomColor { backgroundColor, textColor } ->
+view : Model -> Html Msg
+view pageModel =
+    case pageModel of
+        RandomColor model ->
             let
+                { backgroundColor, textColor } =
+                    model.colors
+
                 cssBackgroundColor =
                     colorToCssRgb backgroundColor
 
@@ -136,12 +179,22 @@ view model =
                 [ text (colorToCssRgb backgroundColor)
                 , br [] []
                 , text ("#" ++ Color.toHex backgroundColor)
-                , a
+                , div
                     [ style "font-size" "calc(.55rem + 1.0vw)"
-                    , style "color" cssTextColor
-                    , href ("?color=" ++ Color.toHex backgroundColor)
+                    , style "line-height" "1.5em"
                     ]
-                    [ text "link to this color" ]
+                    [ a
+                        [ style "color" cssTextColor
+                        , href ("?color=" ++ Color.toHex backgroundColor)
+                        , style "display" "block"
+                        ]
+                        [ text "link to this color" ]
+                    , button
+                        [ type_ "button"
+                        , onClick GenerateRandomColor
+                        ]
+                        [ text "generate random color" ]
+                    ]
                 ]
 
         SpecificColor { backgroundColor, textColor } ->
@@ -181,7 +234,7 @@ view model =
                 ]
 
 
-layout : List (Attribute msg) -> List (Html msg) -> Html msg
+layout : List (Attribute Msg) -> List (Html Msg) -> Html Msg
 layout additionalStyles children =
     div
         (List.append
