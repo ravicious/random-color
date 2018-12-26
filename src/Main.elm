@@ -47,6 +47,9 @@ type alias PageColors =
 type alias Flags =
     { color : String
     , randomNumber : Int
+
+    -- A string describing the path under which the root of the app is mounted, like "/foo" or
+    -- "/foo/bar". If the app is mounted under the root of the domain, `mountPath` can be set to "".
     , mountPath : String
     }
 
@@ -169,7 +172,12 @@ update msg mainModel =
         ClickedLink urlRequest ->
             case urlRequest of
                 Browser.Internal url ->
-                    ( mainModel, Browser.Navigation.pushUrl mainModel.key (Url.toString url) )
+                    ( mainModel
+                    , url
+                        |> Route.addMountPathToUrl mainModel.mountPath
+                        |> Url.toString
+                        |> Browser.Navigation.pushUrl mainModel.key
+                    )
 
                 Browser.External url ->
                     ( mainModel, Browser.Navigation.load url )
