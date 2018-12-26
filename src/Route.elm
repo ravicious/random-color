@@ -1,4 +1,4 @@
-module Route exposing (Route(..), fromUrl)
+module Route exposing (Route(..), addMountPathToUrl, fromUrl)
 
 import Color exposing (Color)
 import ColorParser
@@ -42,3 +42,8 @@ removeMountPathFromUrl mountPath url =
                 |> Result.withDefault url.path
     in
     { url | path = newPath }
+
+
+addMountPathToUrl : String -> Url -> Url
+addMountPathToUrl mountPath url =
+    { url | path = mountPath ++ url.path }
