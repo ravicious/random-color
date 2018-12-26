@@ -1,38 +1,45 @@
 module Main exposing (main)
 
 import Browser
+import Browser.Navigation
 import Color exposing (Color)
 import ColorParser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Random
+import Route
+import Url exposing (Url)
+import Url.Parser as Parser exposing ((</>), oneOf, s)
 
 
 main =
-    Browser.element
+    Browser.application
         { init = init
-        , view = view
+        , view = Browser.Document "Random Color" << List.singleton << view
         , update = update
         , subscriptions = always Sub.none
+        , onUrlRequest = ClickedLink
+        , onUrlChange = ChangedUrl
         }
 
 
-type Model
+type alias Model =
+    { key : Browser.Navigation.Key
+    , page : Page
+    , seed : Random.Seed
+    }
+
+
+type Page
     = IncorrectColor
     | SpecificColor PageColors
-    | RandomColor RandomColorModel
+    | RandomColor PageColors
 
 
 type alias PageColors =
     { backgroundColor : Color
     , textColor : Color
-    }
-
-
-type alias RandomColorModel =
-    { colors : PageColors
-    , seed : Random.Seed
     }
 
 
@@ -101,57 +108,71 @@ generateRandomPageColors seed =
     )
 
 
-init : Flags -> ( Model, Cmd Msg )
-init flags =
-    if String.isEmpty flags.color then
-        let
-            ( pageColors, nextSeed ) =
-                generateRandomPageColors (Random.initialSeed flags.randomNumber)
-        in
-        ( RandomColor
-            { colors = pageColors
-            , seed = nextSeed
-            }
-        , Cmd.none
-        )
+init : Flags -> Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
+init flags url key =
+    let
+        seed =
+            Random.initialSeed flags.randomNumber
+    in
+    changeRouteTo (Route.fromUrl url)
+        { page = IncorrectColor
+        , key = key
+        , seed = seed
+        }
 
-    else
-        case ColorParser.parse flags.color of
-            Ok color ->
-                ( SpecificColor
-                    { backgroundColor = color
-                    , textColor = findContrastingOrComplementaryColor color
-                    }
-                , Cmd.none
-                )
 
-            Err _ ->
-                ( IncorrectColor, Cmd.none )
+changeRouteTo : Maybe Route.Route -> Model -> ( Model, Cmd Msg )
+changeRouteTo maybeRoute mainModel =
+    case maybeRoute of
+        Nothing ->
+            ( { mainModel | page = IncorrectColor }, Cmd.none )
+
+        Just (Route.IncorrectColor _) ->
+            ( { mainModel | page = IncorrectColor }, Cmd.none )
+
+        Just (Route.SpecificColor color) ->
+            ( { mainModel
+                | page =
+                    SpecificColor
+                        { backgroundColor = color
+                        , textColor = findContrastingOrComplementaryColor color
+                        }
+              }
+            , Cmd.none
+            )
+
+        Just Route.RandomColor ->
+            let
+                ( pageColors, nextSeed ) =
+                    generateRandomPageColors mainModel.seed
+            in
+            ( { mainModel
+                | page =
+                    RandomColor pageColors
+                , seed = nextSeed
+              }
+            , Cmd.none
+            )
 
 
 type Msg
-    = GenerateRandomColor
+    = ClickedLink Browser.UrlRequest
+    | ChangedUrl Url
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg pageModel =
-    case pageModel of
-        RandomColor model ->
-            case msg of
-                GenerateRandomColor ->
-                    let
-                        ( pageColors, nextSeed ) =
-                            generateRandomPageColors model.seed
-                    in
-                    ( RandomColor
-                        { colors = pageColors
-                        , seed = nextSeed
-                        }
-                    , Cmd.none
-                    )
+update msg mainModel =
+    case msg of
+        ClickedLink urlRequest ->
+            case urlRequest of
+                Browser.Internal url ->
+                    ( mainModel, Browser.Navigation.pushUrl mainModel.key (Url.toString url) )
 
-        _ ->
-            ( pageModel, Cmd.none )
+                Browser.External url ->
+                    ( mainModel, Browser.Navigation.load url )
+
+        ChangedUrl url ->
+            changeRouteTo (Route.fromUrl url) mainModel
 
 
 
@@ -159,13 +180,10 @@ update msg pageModel =
 
 
 view : Model -> Html Msg
-view pageModel =
-    case pageModel of
-        RandomColor model ->
+view mainModel =
+    case mainModel.page of
+        RandomColor { backgroundColor, textColor } ->
             let
-                { backgroundColor, textColor } =
-                    model.colors
-
                 cssBackgroundColor =
                     colorToCssRgb backgroundColor
 
@@ -185,13 +203,13 @@ view pageModel =
                     ]
                     [ a
                         [ style "color" cssTextColor
-                        , href ("?color=" ++ Color.toHex backgroundColor)
+                        , href ("/colors/" ++ Color.toHex backgroundColor)
                         , style "display" "block"
                         ]
                         [ text "link to this color" ]
-                    , button
-                        [ type_ "button"
-                        , onClick GenerateRandomColor
+                    , a
+                        [ style "color" cssTextColor
+                        , href "/"
                         ]
                         [ text "generate random color" ]
                     ]
@@ -215,7 +233,7 @@ view pageModel =
                 , a
                     [ style "font-size" "calc(.55rem + 1.0vw)"
                     , style "color" cssTextColor
-                    , href "?"
+                    , href "/"
                     ]
                     [ text "generate random color" ]
                 ]
@@ -228,7 +246,7 @@ view pageModel =
                 [ text "Incorrect color"
                 , a
                     [ style "font-size" "calc(.55rem + 1.0vw)"
-                    , href "?"
+                    , href "/"
                     ]
                     [ text "generate random color" ]
                 ]

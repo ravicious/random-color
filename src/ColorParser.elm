@@ -1,8 +1,9 @@
-module ColorParser exposing (parse)
+module ColorParser exposing (parse, urlParser)
 
 import Color exposing (Color)
 import Hex
 import Parser exposing ((|.), (|=), Parser, chompIf)
+import Url.Parser
 
 
 parse : String -> Result String Color
@@ -34,3 +35,10 @@ colorParser =
         |= byteParser
         |= byteParser
         |. Parser.end
+
+
+urlParser : Url.Parser.Parser (Color -> a) a
+urlParser =
+    Url.Parser.custom "COLOR" <|
+        \segment ->
+            parse segment |> Result.toMaybe
