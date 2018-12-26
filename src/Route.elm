@@ -2,8 +2,9 @@ module Route exposing (Route(..), fromUrl)
 
 import Color exposing (Color)
 import ColorParser
+import Parser exposing ((|.))
 import Url exposing (Url)
-import Url.Parser as Parser exposing ((</>), oneOf, s)
+import Url.Parser exposing ((</>), oneOf, s)
 
 
 type Route
@@ -12,11 +13,32 @@ type Route
     | IncorrectColor String
 
 
-fromUrl : Url -> Maybe Route
-fromUrl =
-    Parser.parse <|
+fromUrl : String -> Url -> Maybe Route
+fromUrl mountPath =
+    removeMountPathFromUrl mountPath >> parseUrl
+
+
+parseUrl : Url -> Maybe Route
+parseUrl =
+    Url.Parser.parse <|
         oneOf
-            [ Parser.map RandomColor Parser.top
-            , Parser.map SpecificColor (s "colors" </> ColorParser.urlParser)
-            , Parser.map IncorrectColor (s "colors" </> Parser.string)
+            [ Url.Parser.map RandomColor Url.Parser.top
+            , Url.Parser.map SpecificColor (s "colors" </> ColorParser.urlParser)
+            , Url.Parser.map IncorrectColor (s "colors" </> Url.Parser.string)
             ]
+
+
+removeMountPathFromUrl : String -> Url -> Url
+removeMountPathFromUrl mountPath url =
+    let
+        parser =
+            Parser.getChompedString <|
+                Parser.succeed ()
+                    |. Parser.token mountPath
+                    |. Parser.chompUntilEndOr "\n"
+
+        newPath =
+            Parser.run parser url.path
+                |> Result.withDefault url.path
+    in
+    { url | path = newPath }

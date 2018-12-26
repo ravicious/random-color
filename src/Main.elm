@@ -28,6 +28,7 @@ type alias Model =
     { key : Browser.Navigation.Key
     , page : Page
     , seed : Random.Seed
+    , mountPath : String
     }
 
 
@@ -46,6 +47,7 @@ type alias PageColors =
 type alias Flags =
     { color : String
     , randomNumber : Int
+    , mountPath : String
     }
 
 
@@ -114,10 +116,11 @@ init flags url key =
         seed =
             Random.initialSeed flags.randomNumber
     in
-    changeRouteTo (Route.fromUrl url)
+    changeRouteTo (Route.fromUrl flags.mountPath url)
         { page = IncorrectColor
         , key = key
         , seed = seed
+        , mountPath = flags.mountPath
         }
 
 
@@ -172,7 +175,7 @@ update msg mainModel =
                     ( mainModel, Browser.Navigation.load url )
 
         ChangedUrl url ->
-            changeRouteTo (Route.fromUrl url) mainModel
+            changeRouteTo (Route.fromUrl mainModel.mountPath url) mainModel
 
 
 
