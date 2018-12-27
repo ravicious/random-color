@@ -197,11 +197,11 @@ viewDocument model =
             -- https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
             -- <base> let's use make all relative paths be relative to the mount path.
             [ href
-                (if String.isEmpty model.mountPath then
-                    "/"
+                (if String.endsWith "/" model.mountPath then
+                    model.mountPath
 
                  else
-                    model.mountPath
+                    model.mountPath ++ "/"
                 )
             ]
             []
