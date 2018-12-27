@@ -21,10 +21,8 @@
   </head>
   <body>
     <script>
-      var params = new URL(window.location).searchParams
       var app = Elm.Main.init({
         flags: {
-          color: params.get('color') || '',
           randomNumber: Math.floor(Math.random()*0xFFFFFFFF),
           mountPath: "",
         }

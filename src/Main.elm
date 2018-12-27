@@ -47,8 +47,7 @@ type alias PageColors =
 
 
 type alias Flags =
-    { color : String
-    , randomNumber : Int
+    { randomNumber : Int
 
     -- A string describing the path under which the root of the app is mounted, like "/foo" or
     -- "/foo/bar". If the app is mounted under the root of the domain, `mountPath` can be set to "".
