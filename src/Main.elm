@@ -174,7 +174,6 @@ update msg mainModel =
                 Browser.Internal url ->
                     ( mainModel
                     , url
-                        |> Route.addMountPathToUrl mainModel.mountPath
                         |> Url.toString
                         |> Browser.Navigation.pushUrl mainModel.key
                     )
