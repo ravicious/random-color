@@ -2,7 +2,7 @@ module Route exposing (Route(..), fromUrl)
 
 import Color exposing (Color)
 import ColorParser
-import Parser exposing ((|.))
+import Regex
 import Url exposing (Url)
 import Url.Parser exposing ((</>), oneOf, s)
 
@@ -31,14 +31,10 @@ parseUrl =
 removeMountPathFromUrl : String -> Url -> Url
 removeMountPathFromUrl mountPath url =
     let
-        parser =
-            Parser.getChompedString <|
-                Parser.succeed ()
-                    |. Parser.token mountPath
-                    |. Parser.chompUntilEndOr "\n"
+        mountPathRegex =
+            Maybe.withDefault Regex.never <| Regex.fromString <| "^" ++ mountPath
 
         newPath =
-            Parser.run parser url.path
-                |> Result.withDefault url.path
+            Regex.replace mountPathRegex (\_ -> "") url.path
     in
     { url | path = newPath }
