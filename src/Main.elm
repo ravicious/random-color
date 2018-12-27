@@ -16,7 +16,7 @@ import Url.Parser as Parser exposing ((</>), oneOf, s)
 main =
     Browser.application
         { init = init
-        , view = Browser.Document "Random Color" << List.singleton << view
+        , view = viewDocument
         , update = update
         , subscriptions = always Sub.none
         , onUrlRequest = ClickedLink
@@ -190,6 +190,27 @@ update msg mainModel =
 -- View
 
 
+viewDocument : Model -> Browser.Document Msg
+viewDocument model =
+    { title = "Random Color"
+    , body =
+        [ node "base"
+            -- https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+            -- <base> let's use make all relative paths be relative to the mount path.
+            [ href
+                (if String.isEmpty model.mountPath then
+                    "/"
+
+                 else
+                    model.mountPath
+                )
+            ]
+            []
+        , view model
+        ]
+    }
+
+
 view : Model -> Html Msg
 view mainModel =
     case mainModel.page of
@@ -214,13 +235,13 @@ view mainModel =
                     ]
                     [ a
                         [ style "color" cssTextColor
-                        , href ("/colors/" ++ Color.toHex backgroundColor)
+                        , href ("colors/" ++ Color.toHex backgroundColor)
                         , style "display" "block"
                         ]
                         [ text "link to this color" ]
                     , a
                         [ style "color" cssTextColor
-                        , href "/"
+                        , href ""
                         ]
                         [ text "generate random color" ]
                     ]
@@ -244,7 +265,7 @@ view mainModel =
                 , a
                     [ style "font-size" "calc(.55rem + 1.0vw)"
                     , style "color" cssTextColor
-                    , href "/"
+                    , href ""
                     ]
                     [ text "generate random color" ]
                 ]
@@ -257,7 +278,7 @@ view mainModel =
                 [ text "Incorrect color"
                 , a
                     [ style "font-size" "calc(.55rem + 1.0vw)"
-                    , href "/"
+                    , href ""
                     ]
                     [ text "generate random color" ]
                 ]
