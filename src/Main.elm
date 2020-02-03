@@ -10,7 +10,7 @@ import Html.Events exposing (..)
 import Random
 import Route
 import Svg exposing (path, svg)
-import Svg.Attributes exposing (d, fill, height, viewBox, width)
+import Svg.Attributes exposing (d, fill, viewBox, width)
 import Url exposing (Url)
 import Url.Parser as Parser exposing ((</>), oneOf, s)
 
@@ -43,6 +43,7 @@ type Page
 type alias PageColors =
     { backgroundColor : Color
     , textColor : Color
+    , similarColor : Color
     }
 
 
@@ -63,6 +64,18 @@ byteGenerator =
 colorGenerator : Random.Generator Color
 colorGenerator =
     Random.map3 Color.rgb byteGenerator byteGenerator byteGenerator
+
+
+similarColorGenerator : Color -> Random.Generator Color
+similarColorGenerator baseColor =
+    let
+        { red, green, blue } =
+            Color.toRgb baseColor
+
+        byteRangeGenerator byte =
+            Random.int (Basics.max (byte - 15) 0) (Basics.min (byte + 15) 255)
+    in
+    Random.map3 Color.rgb (byteRangeGenerator red) (byteRangeGenerator green) (byteRangeGenerator blue)
 
 
 generateContrastingColor : Float -> Int -> Random.Seed -> Color -> ( Maybe Color, Random.Seed )
@@ -104,14 +117,23 @@ generateRandomPageColors seed =
         ( backgroundColor, nextSeed ) =
             Random.step colorGenerator seed
 
+        ( similarColor, _ ) =
+            Random.step (similarColorGenerator backgroundColor) seed
+
         textColor =
             findContrastingOrComplementaryColor backgroundColor
     in
     ( { backgroundColor = backgroundColor
       , textColor = textColor
+      , similarColor = similarColor
       }
     , nextSeed
     )
+
+
+generateSimilarColor : Random.Seed -> Color -> ( Color, Random.Seed )
+generateSimilarColor seed baseColor =
+    Random.step (similarColorGenerator baseColor) seed
 
 
 init : Flags -> Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
@@ -134,15 +156,18 @@ changeRouteTo maybeRoute mainModel =
         Nothing ->
             ( { mainModel | page = IncorrectColor }, Cmd.none )
 
-        Just (Route.IncorrectColor _) ->
-            ( { mainModel | page = IncorrectColor }, Cmd.none )
-
         Just (Route.SpecificColor color) ->
+            let
+                ( similarColor, nextSeed ) =
+                    generateSimilarColor mainModel.seed color
+            in
             ( { mainModel
-                | page =
+                | seed = nextSeed
+                , page =
                     SpecificColor
                         { backgroundColor = color
                         , textColor = findContrastingOrComplementaryColor color
+                        , similarColor = similarColor
                         }
               }
             , Cmd.none
@@ -215,61 +240,11 @@ viewDocument model =
 view : Model -> Html Msg
 view mainModel =
     case mainModel.page of
-        RandomColor { backgroundColor, textColor } ->
-            let
-                cssBackgroundColor =
-                    colorToCssRgb backgroundColor
+        RandomColor pageColors ->
+            viewColor pageColors
 
-                cssTextColor =
-                    colorToCssRgb textColor
-            in
-            layout
-                [ style "background-color" cssBackgroundColor
-                , style "color" cssTextColor
-                ]
-                [ text (colorToCssRgb backgroundColor)
-                , br [] []
-                , text ("#" ++ Color.toHex backgroundColor)
-                , div
-                    [ style "font-size" "calc(.55rem + 1.0vw)"
-                    , style "line-height" "1.5em"
-                    ]
-                    [ a
-                        [ style "color" cssTextColor
-                        , href ("colors/" ++ Color.toHex backgroundColor)
-                        , style "display" "block"
-                        ]
-                        [ text "link to this color" ]
-                    , a
-                        [ style "color" cssTextColor
-                        , href ""
-                        ]
-                        [ text "generate random color" ]
-                    ]
-                ]
-
-        SpecificColor { backgroundColor, textColor } ->
-            let
-                cssBackgroundColor =
-                    colorToCssRgb backgroundColor
-
-                cssTextColor =
-                    colorToCssRgb textColor
-            in
-            layout
-                [ style "background-color" cssBackgroundColor
-                , style "color" cssTextColor
-                ]
-                [ text (colorToCssRgb backgroundColor)
-                , br [] []
-                , text ("#" ++ Color.toHex backgroundColor)
-                , a
-                    [ style "font-size" "calc(.55rem + 1.0vw)"
-                    , style "color" cssTextColor
-                    , href ""
-                    ]
-                    [ text "generate random color" ]
-                ]
+        SpecificColor pageColors ->
+            viewColor pageColors
 
         IncorrectColor ->
             layout
@@ -283,6 +258,47 @@ view mainModel =
                     ]
                     [ text "generate random color" ]
                 ]
+
+
+viewColor : PageColors -> Html Msg
+viewColor { backgroundColor, textColor, similarColor } =
+    let
+        cssBackgroundColor =
+            colorToCssRgb backgroundColor
+
+        cssTextColor =
+            colorToCssRgb textColor
+    in
+    layout
+        [ style "background-color" cssBackgroundColor
+        , style "color" cssTextColor
+        ]
+        [ text (colorToCssRgb backgroundColor)
+        , br [] []
+        , text ("#" ++ Color.toHex backgroundColor)
+        , div
+            [ style "font-size" "calc(.55rem + 1.0vw)"
+            , style "line-height" "1.5em"
+            ]
+            [ a
+                [ style "color" cssTextColor
+                , href ("colors/" ++ Color.toHex backgroundColor)
+                , style "display" "block"
+                ]
+                [ text "link to this color" ]
+            , a
+                [ style "color" cssTextColor
+                , href ""
+                ]
+                [ text "generate random color" ]
+            , a
+                [ style "color" cssTextColor
+                , href ("colors/" ++ Color.toHex similarColor)
+                , style "display" "block"
+                ]
+                [ text "generate similar" ]
+            ]
+        ]
 
 
 layout : List (Attribute Msg) -> List (Html Msg) -> Html Msg
@@ -322,7 +338,7 @@ colorToCssRgb color =
 octocat : Html msg
 octocat =
     a [ href "https://github.com/ravicious/random-color", class "github-corner", attribute "aria-label" "View source on Github" ]
-        [ svg [ width "80", height "80", viewBox "0 0 250 250", Svg.Attributes.style "fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" ]
+        [ svg [ Svg.Attributes.width "80", Svg.Attributes.height "80", viewBox "0 0 250 250", Svg.Attributes.style "fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" ]
             [ path [ d "M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z" ]
                 []
             , path [ d "M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2", fill "currentColor", Svg.Attributes.style "transform-origin: 130px 106px;", Svg.Attributes.class "octo-arm" ]

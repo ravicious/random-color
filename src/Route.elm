@@ -10,7 +10,6 @@ import Url.Parser exposing ((</>), oneOf, s)
 type Route
     = SpecificColor Color
     | RandomColor
-    | IncorrectColor String
 
 
 fromUrl : String -> Url -> Maybe Route
@@ -24,7 +23,6 @@ parseUrl =
         oneOf
             [ Url.Parser.map RandomColor Url.Parser.top
             , Url.Parser.map SpecificColor (s "colors" </> ColorParser.urlParser)
-            , Url.Parser.map IncorrectColor (s "colors" </> Url.Parser.string)
             ]
 
 
