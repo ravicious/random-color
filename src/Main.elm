@@ -43,6 +43,7 @@ type Page
 type alias PageColors =
     { backgroundColor : Color
     , textColor : Color
+    , similarColor : Color
     }
 
 
@@ -63,6 +64,18 @@ byteGenerator =
 colorGenerator : Random.Generator Color
 colorGenerator =
     Random.map3 Color.rgb byteGenerator byteGenerator byteGenerator
+
+
+similarColorGenerator : Color -> Random.Generator Color
+similarColorGenerator baseColor =
+    let
+        { red, green, blue } =
+            Color.toRgb baseColor
+
+        byteRangeGenerator byte =
+            Random.int (Basics.max (byte - 15) 0) (Basics.min (byte + 15) 255)
+    in
+    Random.map3 Color.rgb (byteRangeGenerator red) (byteRangeGenerator green) (byteRangeGenerator blue)
 
 
 generateContrastingColor : Float -> Int -> Random.Seed -> Color -> ( Maybe Color, Random.Seed )
@@ -104,14 +117,23 @@ generateRandomPageColors seed =
         ( backgroundColor, nextSeed ) =
             Random.step colorGenerator seed
 
+        ( similarColor, _ ) =
+            Random.step (similarColorGenerator backgroundColor) seed
+
         textColor =
             findContrastingOrComplementaryColor backgroundColor
     in
     ( { backgroundColor = backgroundColor
       , textColor = textColor
+      , similarColor = similarColor
       }
     , nextSeed
     )
+
+
+generateSimilarColor : Random.Seed -> Color -> ( Color, Random.Seed )
+generateSimilarColor seed baseColor =
+    Random.step (similarColorGenerator baseColor) seed
 
 
 init : Flags -> Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
@@ -134,15 +156,18 @@ changeRouteTo maybeRoute mainModel =
         Nothing ->
             ( { mainModel | page = IncorrectColor }, Cmd.none )
 
-        Just (Route.IncorrectColor _) ->
-            ( { mainModel | page = IncorrectColor }, Cmd.none )
-
         Just (Route.SpecificColor color) ->
+            let
+                ( similarColor, nextSeed ) =
+                    generateSimilarColor mainModel.seed color
+            in
             ( { mainModel
-                | page =
+                | seed = nextSeed
+                , page =
                     SpecificColor
                         { backgroundColor = color
                         , textColor = findContrastingOrComplementaryColor color
+                        , similarColor = similarColor
                         }
               }
             , Cmd.none
@@ -236,7 +261,7 @@ view mainModel =
 
 
 viewColor : PageColors -> Html Msg
-viewColor { backgroundColor, textColor } =
+viewColor { backgroundColor, textColor, similarColor } =
     let
         cssBackgroundColor =
             colorToCssRgb backgroundColor
@@ -266,6 +291,12 @@ viewColor { backgroundColor, textColor } =
                 , href ""
                 ]
                 [ text "generate random color" ]
+            , a
+                [ style "color" cssTextColor
+                , href ("colors/" ++ Color.toHex similarColor)
+                , style "display" "block"
+                ]
+                [ text "generate similar" ]
             ]
         ]
 
