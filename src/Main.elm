@@ -215,61 +215,11 @@ viewDocument model =
 view : Model -> Html Msg
 view mainModel =
     case mainModel.page of
-        RandomColor { backgroundColor, textColor } ->
-            let
-                cssBackgroundColor =
-                    colorToCssRgb backgroundColor
+        RandomColor pageColors ->
+            viewColor pageColors
 
-                cssTextColor =
-                    colorToCssRgb textColor
-            in
-            layout
-                [ style "background-color" cssBackgroundColor
-                , style "color" cssTextColor
-                ]
-                [ text (colorToCssRgb backgroundColor)
-                , br [] []
-                , text ("#" ++ Color.toHex backgroundColor)
-                , div
-                    [ style "font-size" "calc(.55rem + 1.0vw)"
-                    , style "line-height" "1.5em"
-                    ]
-                    [ a
-                        [ style "color" cssTextColor
-                        , href ("colors/" ++ Color.toHex backgroundColor)
-                        , style "display" "block"
-                        ]
-                        [ text "link to this color" ]
-                    , a
-                        [ style "color" cssTextColor
-                        , href ""
-                        ]
-                        [ text "generate random color" ]
-                    ]
-                ]
-
-        SpecificColor { backgroundColor, textColor } ->
-            let
-                cssBackgroundColor =
-                    colorToCssRgb backgroundColor
-
-                cssTextColor =
-                    colorToCssRgb textColor
-            in
-            layout
-                [ style "background-color" cssBackgroundColor
-                , style "color" cssTextColor
-                ]
-                [ text (colorToCssRgb backgroundColor)
-                , br [] []
-                , text ("#" ++ Color.toHex backgroundColor)
-                , a
-                    [ style "font-size" "calc(.55rem + 1.0vw)"
-                    , style "color" cssTextColor
-                    , href ""
-                    ]
-                    [ text "generate random color" ]
-                ]
+        SpecificColor pageColors ->
+            viewColor pageColors
 
         IncorrectColor ->
             layout
@@ -283,6 +233,41 @@ view mainModel =
                     ]
                     [ text "generate random color" ]
                 ]
+
+
+viewColor : PageColors -> Html Msg
+viewColor { backgroundColor, textColor } =
+    let
+        cssBackgroundColor =
+            colorToCssRgb backgroundColor
+
+        cssTextColor =
+            colorToCssRgb textColor
+    in
+    layout
+        [ style "background-color" cssBackgroundColor
+        , style "color" cssTextColor
+        ]
+        [ text (colorToCssRgb backgroundColor)
+        , br [] []
+        , text ("#" ++ Color.toHex backgroundColor)
+        , div
+            [ style "font-size" "calc(.55rem + 1.0vw)"
+            , style "line-height" "1.5em"
+            ]
+            [ a
+                [ style "color" cssTextColor
+                , href ("colors/" ++ Color.toHex backgroundColor)
+                , style "display" "block"
+                ]
+                [ text "link to this color" ]
+            , a
+                [ style "color" cssTextColor
+                , href ""
+                ]
+                [ text "generate random color" ]
+            ]
+        ]
 
 
 layout : List (Attribute Msg) -> List (Html Msg) -> Html Msg
